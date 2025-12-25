@@ -16,7 +16,7 @@ from src.visualization import plot_gauge_chart, plot_confusion_matrix, display_m
 # --- 應用程式設定 ---
 st.set_page_config(
     page_title="AI 文本偵測器",
-    page_icon="🤖",
+    page_icon="👾",
     layout="wide"
 )
 
@@ -30,10 +30,10 @@ if 'model_info' not in st.session_state:
 
 # --- 全局模型載入 ---
 @st.cache_resource
-def get_model_from_info(model_info):
-    """從已載入的 model_info 中提取模型和標籤編碼器。"""
-    if model_info:
-        return model_info.get("model"), model_info.get("label_encoder")
+def get_model_from_info(_model_info): # <-- 這裡加上了底線
+    """從已載入的 _model_info 中提取模型和標籤編碼器。"""
+    if _model_info:
+        return _model_info.get("model"), _model_info.get("label_encoder")
     return None, None
 
 model, le = get_model_from_info(st.session_state.model_info)
@@ -47,8 +47,9 @@ with st.sidebar.expander("🤖 模型資訊", expanded=True):
     else:
         st.error("模型檔案 `model.joblib` 遺失！請先在本機端執行 `python -m src.model` 來產生模型檔案。")
 
-with st.sidebar.expander("ℹ️ 開發與環境"):
-    st.write("**開發者:** Candice Wu")
+with st.sidebar.expander("ℹ️ 開發與環境", expanded=True): # 這裡添加了 expanded=True
+    st.write("**專案作者:** Candice Wu")
+    st.markdown("GitHub 儲存庫: [點此前往](https://github.com/candice-wu/Cybersecurity_HW_05_AI_Detector.git)")
     st.write(f"**Python 版本:** {sys.version.split(' ')[0]}")
     st.write(f"**Streamlit 版本:** {st.__version__}")
     st.write(f"**Scikit-learn 版本:** {sklearn.__version__}")
@@ -62,7 +63,7 @@ st.sidebar.write("最後更新: 2025-12-25")
 
 
 # --- 主頁面 ---
-st.title("🤖 AI 文本偵測器")
+st.title("👾 AI 文本偵測器")
 st.write("檢測輸入的文字內容是由 AI 生成還是人類撰寫。")
 
 # --- 文本分析輸入區 ---

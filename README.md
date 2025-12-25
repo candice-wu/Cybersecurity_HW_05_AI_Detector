@@ -116,8 +116,13 @@
     pip install -r requirements.txt
     ```
 
-4.  **啟動 Streamlit 應用程式**:
-    *   **重要提示**: 在第一次運行應用程式並嘗試分析文本之前，請務必先點擊 Streamlit 介面側邊欄中的「**重新訓練模型**」按鈕，以產生必要的 `model.joblib` 模型檔案。
+4.  **產生模型檔案**:
+    *   **重要提示**: 在啟動應用程式之前，您需要先在本機端執行一次模型訓練，以產生 `model.joblib` 模型檔案。請在終端機中執行以下指令：
+    ```bash
+    python -m src.model
+    ```
+
+5.  **啟動 Streamlit 應用程式**:
     ```bash
     streamlit run 5114050013_hw5.py
     ```

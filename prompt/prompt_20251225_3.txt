@@ -480,4 +480,566 @@ Gemini：✦ 好的，我將會將所有已異動的檔案推送到您的 GitHub
 ✦ git status 顯示 README.md 和 prompt/prompt_20251225_3.txt 已修改。
 
   我將把這些變更加入暫存區。
+╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ✓  Shell git add . [current working directory /Users/candicewu/Desktop/20241204 碩班/114 學年度碩專班申讀/10_作業… │
+│                                                                                                                    │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+✦ 變更已暫存。我將使用描述性訊息提交。
+╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ✓  Shell git commit -m "docs: Update README.md with new sections and deployment info; add prompt log." [current w… │
+│                                                                                                                    │
+│ [master 247b77e] docs: Update README.md with new sections and deployment info; add prompt log.                     │
+│  2 files changed, 133 insertions(+), 14 deletions(-)                                                               │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+✦ 提交成功。現在推送到遠端儲存庫。
+╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ✓  Shell git push origin master [current working directory /Users/candicewu/Desktop/20241204 碩班/114 學年度碩專…  │
+│                                                                                                                    │
+│ Enumerating objects: 9, done.                                                                                      │
+│ Counting objects: 100% (9/9), done.                                                                                │
+│ Delta compression using up to 12 threads                                                                           │
+│ Compressing objects: 100% (5/5), done.                                                                             │
+│ Writing objects: 100% (5/5), 2.91 KiB | 2.91 MiB/s, done.                                                          │
+│ Total 5 (delta 4), reused 0 (delta 0), pack-reused 0 (from 0)                                                      │
+│ remote: Resolving deltas: 100% (4/4), completed with 4 local objects.                                              │
+│ To https://github.com/candice-wu/Cybersecurity_HW_05_AI_Detector.git                                               │
+│    2da8b80..247b77e  master -> master                                                                              │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+✦ git push 指令已成功執行。
 
+  更新後的檔案已推送到遠端 GitHub 儲存庫。
+
+  操作已全部完成。
+
+User：為什麼部署到streamlit
+  cloud，按下開始分析鈕，卻出現「模型尚未準備好。請先在側邊欄訓練模型。」即使按了「重新訓練模型」下方有出現「📈
+  當前模型效能」各個圖表，但上方仍是「模型尚未準備好。請先在側邊欄訓練模型。」，是少做什麼步驟嗎？
+
+Gemini：✦ 這是一個非常關鍵且常見的問題，很高興您能發現它。這個錯誤的根源在於 Streamlit Cloud
+  的運作機制，以及我們目前應用程式的設計方式。
+
+  問題分析：
+
+   1. 雲端檔案系統的「短暫性」：當您將應用程式部署到 Streamlit Cloud
+      這類的雲端平台時，它運行的檔案系統是「短暫的」(ephemeral)。這意味著您在應用程式運行時所建立的任何檔案（例如我們
+      點擊「重新訓練模型」後產生的
+      model.joblib），都不會被永久保存。當應用程式因為閒置而休眠、重新啟動、或平台進行維護時，這些動態產生的檔案就會消
+      失。
+
+   2. 您觀察到的流程：
+       * 按下「重新訓練模型」：程式成功訓練並在「當下」的雲端環境中產生了 model.joblib。同時，評估結果被存入了
+         st.session_state（會話狀態），所以您能在下方看到「📈 當前模型效能」的圖表。
+       * 按下「開始分析」：此時可能觸發了 Streamlit 的重新整理。應用程式重新啟動，@st.cache_resource
+         也會重新執行。它嘗試去載入 model.joblib，但因為檔案系統可能已被重置，檔案已不存在，所以 load_model()
+         失敗，回傳 None。因此，您看到了「模型尚未準備好」的錯誤訊息。
+
+  解決方案：
+
+  您提供的參考範例之所以沒有這個問題，是因為它採用了一種更適合雲端部署的模式：它不允許在線上訓練模型，而是直接載入一個
+  已經訓練好並包含在專案中的模型。
+
+  為了讓我們的應用程式在 Streamlit Cloud 上穩定運行，我們需要採用類似的策略。
+
+  我的修正計畫如下：
+
+   1. 預先訓練並打包模型：
+       * 我會在本機端執行一次模型訓練，產生一個穩定、可用的 model.joblib 檔案。
+       * 然後，我會將這個 model.joblib 直接加入到我們的專案中，並將其從 .gitignore 中移除，讓它可以被推送到 GitHub。
+
+   2. 簡化應用程式介面：
+       * 既然模型已經預先訓練好並包含在專案裡，那麼線上的「重新訓練模型」功能就變得多餘且會引發問題。因此，我將會移除
+         側邊欄的「模型訓練」區塊。
+       * 同樣地，「當前模型效能」區塊也會被移除，因為它顯示的是「訓練時」的評估結果。一個已部署的產品通常只提供預測功
+         能，而其效能應記錄在 README.md 等靜態文件中。
+       * 這樣做能大幅簡化 UI，讓使用者專注於核心的「文本分析」功能，完全解決您遇到的狀態混亂和錯誤問題。
+
+  總結：
+  為了確保雲端部署的穩定性，我們需要將「模型訓練」視為一個離線的開發步驟，而將「模型預測」作為線上的核心功能。我將會執
+  行上述計畫，產生模型檔案並簡化 UI。
+
+  請問您同意這個修正方向嗎？如果同意，我將開始執行。
+
+User：同意，謝謝
+
+  請問現在是不是算是在進行 tasks.md 裡的 任務 4.3?
+
+Gemini：✦ 是的，我理解您的問題。
+
+  目前我們正在進行的這一步驟——將 model.joblib 檔案預先打包進專案並移除應用程式內的訓練功能——是為了確保應用程式能夠在
+  Streamlit Cloud 上穩定運行。這可以視為部署準備 (Task 4.2 的細化) 的一部分。
+
+  Task 4.3：「進行最終的端對端測試」 則是指在應用程式成功部署到 Streamlit Cloud
+  後，您（作為使用者）對其所有功能進行全面性的測試，以驗證在實際的雲端環境中，一切是否都如預期般工作。
+
+  所以，我們現在的動作是讓應用程式「準備好」進行可靠的部署，為之後的端對端測試打下基礎。
+
+  我將立即按照我們討論的計畫進行修改。首先，我將在本機端執行模型訓練以生成 model.joblib 檔案。
+╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ✓  Shell /Users/candicewu/virtualenvs/Security_HW_05/bin/python src/model.py [current working directory /Users/ca… │
+│                                                                                                                    │
+│ Traceback (most recent call last):                                                                                 │
+│   File "/Users/candicewu/Desktop/20241204 碩班/114 學年度碩專班申讀/10_作業報告/7972 人工智慧與資訊安全_           │
+│ 陳煥/Security/HW5/src/model.py", line 11, in <module>                                                              │
+│     from .data_loader import load_data                                                                             │
+│ ImportError: attempted relative import with no known parent package                                                │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+✦ 我遇到了 ImportError: attempted relative import with no known parent package 錯誤。
+
+  這是因為 src/model.py 使用了相對導入，無法直接作為腳本運行。正確的做法是將其作為模組運行。
+
+  修正計畫：
+  我將使用 python -m src.model 重新執行模型訓練指令。成功生成 model.joblib 後，我會繼續更新 .gitignore、修改
+  5114050013_hw5.py，並進行提交和推送。
+╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ✓  Shell /Users/candicewu/virtualenvs/Security_HW_05/bin/python -m src.model [current working directory /Users/ca… │
+│                                                                                                                    │
+│ 正在載入資料...                                                                                                    │
+│ 正在進行特徵工程...                                                                                                │
+│ 正在分割資料集...                                                                                                  │
+│ 正在訓練模型...                                                                                                    │
+│ 正在進行預測...                                                                                                    │
+│                                                                                                                    │
+│ 模型評估結果：                                                                                                     │
+│ 模型準確率 (Accuracy): 0.75                                                                                        │
+│                                                                                                                    │
+│ 分類報告 (Classification Report):                                                                                  │
+│               precision    recall  f1-score   support                                                              │
+│                                                                                                                    │
+│           ai       1.00      0.50      0.67         2                                                              │
+│        human       0.67      1.00      0.80         2                                                              │
+│                                                                                                                    │
+│     accuracy                           0.75         4                                                              │
+│    macro avg       0.83      0.75      0.73         4                                                              │
+│ weighted avg       0.83      0.75      0.73         4                                                              │
+│                                                                                                                    │
+│ 正在儲存模型至 model.joblib...                                                                                     │
+│ 模型儲存成功。                                                                                                     │
+│                                                                                                                    │
+│ 模型載入成功，進行測試預測...                                                                                      │
+│ 測試文本 (AI): 'This is a test text generated by an artificial intelligence to see how the model reacts.'          │
+│   -> 預測: ai, 信賴度: 0.75                                                                                        │
+│                                                                                                                    │
+│ 測試文本 (Human): 'I went to the store this morning to buy some bread and milk for breakfast.'                     │
+│   -> 預測: ai, 信賴度: 0.67                                                                                        │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+✦ 模型訓練已成功，model.joblib 應已在專案根目錄產生。
+
+  接下來我將依序執行以下計畫：
+   1. 更新 .gitignore，將 model.joblib 移除。
+   2. 修改 5114050013_hw5.py，移除應用程式內的訓練介面及模型效能儀表板。
+   3. 提交並推送所有變更，包含新的 model.joblib 檔案。
+
+  現在，我先更新 .gitignore。
+╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ✓  ReadFile .gitignore                                                                                             │
+│                                                                                                                    │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+✦ 好的，我已讀取 .gitignore。現在，我將移除 model.joblib 那一行。
+╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ✓  Edit .gitignore: # macOS... => # macOS...                                                                       │
+│                                                                                                                    │
+│ 36   .project                                                                                                      │
+│ 37   .classpath                                                                                                    │
+│ 38                                                                                                                 │
+│ 39 - # Model Artifacts                                                                                             │
+│ 40 - model.joblib                                                                                                  │
+│ 41 -                                                                                                               │
+│ 39   # Streamlit                                                                                                   │
+│ 40   .streamlit/                                                                                                   │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+✦ model.joblib 已從 .gitignore 移除。
+
+  我現在要修改 5114050013_hw5.py，移除應用程式內的訓練介面和模型效能儀表板。
+╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ✓  ReadFile 5114050013_hw5.py                                                                                      │
+│                                                                                                                    │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+✦ 我已讀取 5114050013_hw5.py。
+
+  我現在將修改它，移除應用程式內的訓練介面和模型效能儀表板。
+
+  `5114050013_hw5.py` 的變更：
+   1. 移除 `st.session_state.model_info` 初始化：由於應用程式內訓練功能已移除，此狀態將不會被設定。
+   2. 移除側邊欄中整個「🏋️‍♀️ 模型訓練」可展開區塊。
+   3. 更新「🤖 模型資訊」可展開區塊：移除「尚未偵測到模型。請先訓練新模型。」的警告，因為模型現在應該始終存在。
+   4. 移除「--- 模型效能顯示區 ---」（即 `if st.session_state.model_info:`
+      區塊）：此整個區塊將不再需要，因為模型效能不再應用程式內部追蹤。
+   5. 更新模型載入警告：在「文本分析輸入區」中，警告訊息 elif model is None:
+      st.error("模型尚未準備好。請先在側邊欄訓練模型。")
+      應更新為反映模型現在已預訓練並與應用程式一同部署的狀態。它將檢查 model 是否為 None（這表示在啟動時未找到
+      model.joblib）。
+
+  以下是 5114050013_hw5.py 的新內容：
+╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ -  Edit 5114050013_hw5.py: import streamlit as st... => import streamlit as st...                                  │
+│                                                                                                                    │
+│  10   import altair as alt                                                                                         │
+│  11                                                                                                                │
+│  12   # 從 src 導入模組                                                                                            │
+│  13 - from src.model import train_model, load_model, predict_text, save_model, FEATURE_COLUMNS                     │
+│  13 + from src.model import train_model, load_model, predict_text, FEATURE_COLUMNS                                 │
+│  14   from src.visualization import plot_gauge_chart, plot_confusion_matrix, display_metrics                       │
+│  15                                                                                                                │
+│  16   # --- 應用程式設定 ---                                                                                       │
+│ ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════ │
+│  23   # --- 會話狀態初始化 ---                                                                                     │
+│  24   if 'analysis_results' not in st.session_state:                                                               │
+│  25       st.session_state.analysis_results = None                                                                 │
+│  26 - if 'model_info' not in st.session_state:                                                                     │
+│  27 -     st.session_state.model_info = None                                                                       │
+│  26                                                                                                                │
+│  27   # --- 全局模型載入 ---                                                                                       │
+│  28   @st.cache_resource                                                                                           │
+│  29   def get_model():                                                                                             │
+│  32 -     """僅在應用程式啟動或模型更新時載入一次模型。"""                                                         │
+│  30 +     """僅在應用程式啟動時載入一次模型。"""                                                                   │
+│  31       model, le = load_model()                                                                                 │
+│  32       return model, le                                                                                         │
+│  33                                                                                                                │
+│ ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════ │
+│  40       if model:                                                                                                │
+│  41           st.success("模型已成功載入。")                                                                       │
+│  42       else:                                                                                                    │
+│  45 -         st.warning("尚未偵測到模型。請先訓練新模型。")                                                       │
+│  43 +         st.error("模型檔案遺失！請確保 `model.joblib` 存在於專案根目錄中。")                                 │
+│  44                                                                                                                │
+│  47 - with st.sidebar.expander("🏋️‍♀️ 模型訓練"):                                                                     │
+│  48 -     st.write("點擊下方按鈕以使用專案內建的資料集重新訓練模型。")                                             │
+│  49 -     if st.button("重新訓練模型", help="此過程可能需要一些時間。"):                                           │
+│  50 -         with st.spinner("模型訓練中，請稍候..."):                                                            │
+│  51 -             training_results = train_model()                                                                 │
+│  45                                                                                                                │
+│ ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════ │
+│  53 -         if training_results:                                                                                 │
+│  54 -             st.cache_resource.clear()                                                                        │
+│  55 -             if 'analysis_results' in st.session_state:                                                       │
+│  56 -                 del st.session_state.analysis_results                                                        │
+│  57 -             st.session_state.model_info = training_results                                                   │
+│  58 -             st.success("模型訓練完成！")                                                                     │
+│  59 -             st.info("頁面將自動刷新以載入新模型...")                                                         │
+│  60 -             st.rerun()                                                                                       │
+│  61 -         else:                                                                                                │
+│  62 -             st.error("模型訓練失敗。請檢查資料或日誌。")                                                     │
+│  63 -                                                                                                              │
+│  46   with st.sidebar.expander("ℹ️ 系統與開發資訊"):                                                               │
+│  47       st.write("**開發者:** Candice Wu")                                                                       │
+│  48       st.write(f"**Python 版本:** {sys.version.split(' ')[0]}")                                                │
+│ ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════ │
+│  81       if not text_to_analyze.strip():                                                                          │
+│  82           st.warning("請輸入或上傳有效的文本內容。")                                                           │
+│  83       elif model is None:                                                                                      │
+│ ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════ │
+│ 102 -         st.error("模型尚未準備好。請先在側邊欄訓練模型。")                                                   │
+│  84 +         st.error("模型檔案遺失！請確保 `model.joblib` 存在於專案根目錄中。")                                 │
+│  85       else:                                                                                                    │
+│  86           start_time = time.time()                                                                             │
+│  87           with st.spinner("正在分析文本..."):                                                                  │
+│ ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════ │
+│ 138           perf_col2.metric("分析字數", f"{results['word_count']} 字")                                          │
+│ 139           perf_col3.metric("處理速度", f"{results['words_per_sec']:.0f} 字/秒")                                │
+│ 140                                                                                                                │
+│ ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════ │
+│ 159 - # --- 模型效能顯示區 ---                                                                                     │
+│ 160 - if st.session_state.model_info:                                                                              │
+│ 161 -     st.markdown("---")                                                                                       │
+│ 162 -     st.header("📈 當前模型效能")                                                                             │
+│ 163 -                                                                                                              │
+│ 164 -     model_results = st.session_state.model_info                                                              │
+│ 165 -     y_test_labels_upper = [label.capitalize() for label in model_results["y_test"]]                          │
+│ 166 -     y_pred_labels_upper = [label.capitalize() for label in model_results["y_pred"]]                          │
+│ 167 -     class_labels = sorted(list(set(y_test_labels_upper)))                                                    │
+│ 168 -                                                                                                              │
+│ 169 -     display_metrics(y_test_labels_upper, y_pred_labels_upper, labels=class_labels)                           │
+│ 170 -                                                                                                              │
+│ 171 -     m_col1, m_col2 = st.columns(2)                                                                           │
+│ 172 -     with m_col1:                                                                                             │
+│ 173 -         st.write("#### ⛳ 特徵重要性")                                                                       │
+│ 174 -         st.dataframe(pd.Series(model_results["model"].feature_importances_, index=model_results[             │
+│     "feature_columns"]).sort_values(ascending=False).round(4))                                                     │
+│ 175 -     with m_col2:                                                                                             │
+│ 176 -         st.write("#### 🧩 混淆矩陣")                                                                         │
+│ 177 -         st.plotly_chart(plot_confusion_matrix(y_test_labels_upper, y_pred_labels_upper,                      │
+│     labels=class_labels), use_container_width=True)                                                                │
+│ 178 -                                                                                                              │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+ℹ Request cancelled.
+
+User：為什麼要移除圖表數據分析？我也需要這些訊息在web上
+
+Gemini：✦ 非常抱歉，我對您的需求產生了誤解。我移除圖表數據分析區塊的本意，是為了配合「預先訓練模型」的策略，避免在沒有即時訓練
+  的情況下，該區塊沒有數據可顯示。
+
+  但我現在明白了，您的意思是即使模型是預先訓練好的，您仍然希望在應用程式介面上看到這個靜態、預訓練模型的效能指標，因為
+  這份數據對於評估和信任模型至關重要。
+
+  我完全同意，這是一個非常合理的需求。我將立即修正我的作法。
+
+  新的修正計畫：
+
+   1. 打包效能數據：我會修改 src/model.py 的儲存邏輯。在執行離線訓練並產生 model.joblib
+      檔案時，我會將模型本身，連同它的評估結果（例如在測試集上的 y_test, y_pred 等數據）全部打包儲存在同一個
+      `model.joblib` 檔案中。
+
+   2. 啟動時載入所有資訊：修改主程式 5114050013_hw5.py。在應用程式啟動時，它會載入這個包含了所有資訊的 model.joblib
+      檔案。
+
+   3. 恢復並永久顯示圖表：我會將先前移除的「📈
+      當前模型效能」區塊重新加回介面中。因為效能數據現在是跟模型一起被載入的，所以這個區塊將能夠在任何時候都穩定地顯示
+      當前模型的效能指標，而不再依賴於應用程式內的即時訓練。
+
+  總之，我會將「模型效能」視為與模型本身一樣重要的、需要被永久展示的資訊，並修正程式以達成此目標。
+
+  我現在開始執行這個新的修正計畫，首先從修改 src/model.py 的儲存與載入邏輯開始。
+╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ✓  ReadFile src/model.py                                                                                           │
+│                                                                                                                    │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+✦ 好的，我已讀取 src/model.py。我將修改 save_model 和 load_model 以處理整個 training_results 字典。
+
+  變更如下：
+   1. save_model 函式簽名將改為 save_model(training_results: Dict[str, Any], ...)，並使用 joblib.dump 儲存整個
+      training_results 字典。
+   2. load_model 將載入並傳回整個字典，若找不到檔案則傳回 None，簽名改為 -> Dict[str,
+      Any]，由呼叫端程式碼負責解開字典。
+   3. if __name__ == '__main__': 中的 save_model 呼叫將改為
+      save_model(training_results)，載入部分也會隨之調整以解開字典。
+
+  我現在將套用這些變更。
+╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ✓  Edit src/model.py: import pandas as pd... => import pandas as pd...                                             │
+│                                                                                                                    │
+│  78           "feature_columns": FEATURE_COLUMNS                                                                   │
+│  79       }                                                                                                        │
+│  80                                                                                                                │
+│  81 - def save_model(model: RandomForestClassifier, le: LabelEncoder, filepath: str = MODEL_PATH):                 │
+│  81 + def save_model(training_results: Dict[str, Any], filepath: str = MODEL_PATH):                                │
+│  82       """                                                                                                      │
+│  83 -     儲存訓練好的模型和標籤編碼器。                                                                           │
+│  83 +     儲存訓練結果，包含模型、標籤編碼器及評估數據。                                                           │
+│  84                                                                                                                │
+│  85       Args:                                                                                                    │
+│  86 -         model (RandomForestClassifier): 訓練好的模型。                                                       │
+│  87 -         le (LabelEncoder): 標籤編碼器。                                                                      │
+│  86 +         training_results (Dict[str, Any]): 從 train_model() 回傳的字典。                                     │
+│  87           filepath (str): 儲存路徑。                                                                           │
+│  88       """                                                                                                      │
+│  90 -     print(f"正在儲存模型至 {filepath}...")                                                                   │
+│  91 -     joblib.dump({'model': model, 'label_encoder': le}, filepath)                                             │
+│  89 +     print(f"正在儲存模型及評估結果至 {filepath}...")                                                         │
+│  90 +     joblib.dump(training_results, filepath)                                                                  │
+│  91       print("模型儲存成功。")                                                                                  │
+│  92                                                                                                                │
+│  94 - def load_model(filepath: str = MODEL_PATH) -> Tuple[RandomForestClassifier, LabelEncoder]:                   │
+│  93 + def load_model(filepath: str = MODEL_PATH) -> Dict[str, Any]:                                                │
+│  94       """                                                                                                      │
+│  96 -     載入儲存的模型和標籤編碼器。                                                                             │
+│  95 +     載入儲存的模型及評估結果。                                                                               │
+│  96                                                                                                                │
+│  97       Args:                                                                                                    │
+│  98           filepath (str): 模型檔案路徑。                                                                       │
+│  99                                                                                                                │
+│ 100       Returns:                                                                                                 │
+│ 102 -         Tuple[RandomForestClassifier, LabelEncoder]: 回傳模型和標籤編碼器，如果檔案不存在則回傳 (None, None  │
+│     )。                                                                                                            │
+│ 101 +         Dict[str, Any]: 包含模型、標籤編碼器及評估數據的字典，如果檔案不存在則回傳 None。                    │
+│ 102       """                                                                                                      │
+│ 103       try:                                                                                                     │
+│ 104           data = joblib.load(filepath)                                                                         │
+│ 106 -         return data['model'], data['label_encoder']                                                          │
+│ 105 +         return data                                                                                          │
+│ 106       except FileNotFoundError:                                                                                │
+│ 108 -         return None, None                                                                                    │
+│ 107 +         return None                                                                                          │
+│ 108                                                                                                                │
+│ 109   def predict_text(text: str, model: RandomForestClassifier, le: LabelEncoder) -> Tuple[str, float]:           │
+│ 110       """                                                                                                      │
+│ ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════ │
+│ 139       training_results = train_model()                                                                         │
+│ 140                                                                                                                │
+│ 141       if training_results:                                                                                     │
+│ 143 -         # 儲存模型                                                                                           │
+│ 144 -         save_model(training_results["model"], training_results["label_encoder"])                             │
+│ 142 +         # 儲存完整的訓練結果                                                                                 │
+│ 143 +         save_model(training_results)                                                                         │
+│ 144                                                                                                                │
+│ 145           # 載入模型並測試                                                                                     │
+│ 147 -         loaded_model, loaded_le = load_model()                                                               │
+│ 148 -         if loaded_model and loaded_le:                                                                       │
+│ 149 -             print("\n模型載入成功，進行測試預測...")                                                         │
+│ 146 +         loaded_data = load_model()                                                                           │
+│ 147 +         if loaded_data:                                                                                      │
+│ 148 +             print("\n模型及評估資料載入成功，進行測試預測...")                                               │
+│ 149 +             loaded_model = loaded_data["model"]                                                              │
+│ 150 +             loaded_le = loaded_data["label_encoder"]                                                         │
+│ 151 +                                                                                                              │
+│ 152               test_text_ai = "This is a test text generated by an artificial intelligence to see how the model │
+│       reacts."                                                                                                     │
+│ 153               test_text_human = "I went to the store this morning to buy some bread and milk for breakfast."   │
+│ 154                                                                                                                │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+✦ 好的，我已更新 src/model.py 以儲存和載入整個訓練結果字典。現在，我需要重新執行訓練以產生新的 model.joblib 檔案。
+╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ✓  Shell /Users/candicewu/virtualenvs/Security_HW_05/bin/python -m src.model [current working directory /Users/ca… │
+│                                                                                                                    │
+│ 正在載入資料...                                                                                                    │
+│ 正在進行特徵工程...                                                                                                │
+│ 正在分割資料集...                                                                                                  │
+│ 正在訓練模型...                                                                                                    │
+│ 正在進行預測...                                                                                                    │
+│                                                                                                                    │
+│ 模型評估結果：                                                                                                     │
+│ 模型準確率 (Accuracy): 0.75                                                                                        │
+│                                                                                                                    │
+│ 分類報告 (Classification Report):                                                                                  │
+│               precision    recall  f1-score   support                                                              │
+│                                                                                                                    │
+│           ai       1.00      0.50      0.67         2                                                              │
+│        human       0.67      1.00      0.80         2                                                              │
+│                                                                                                                    │
+│     accuracy                           0.75         4                                                              │
+│    macro avg       0.83      0.75      0.73         4                                                              │
+│ weighted avg       0.83      0.75      0.73         4                                                              │
+│                                                                                                                    │
+│ 正在儲存模型及評估結果至 model.joblib...                                                                           │
+│ 模型儲存成功。                                                                                                     │
+│                                                                                                                    │
+│ 模型及評估資料載入成功，進行測試預測...                                                                            │
+│ 測試文本 (AI): 'This is a test text generated by an artificial intelligence to see how the model reacts.'          │
+│   -> 預測: ai, 信賴度: 0.75                                                                                        │
+│                                                                                                                    │
+│ 測試文本 (Human): 'I went to the store this morning to buy some bread and milk for breakfast.'                     │
+│   -> 預測: ai, 信賴度: 0.67                                                                                        │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+✦ 我已成功重新生成 model.joblib，其中包含評估數據。現在，我將修改 5114050013_hw5.py：載入 model.joblib
+  中的完整字典，解包以獲取模型、標籤編碼器和評估數據，並在啟動時將評估數據儲存到 st.session_state
+  中。最後，我將恢復「📈 當前模型效能」區塊以顯示效能指標，並移除應用程式內的訓練介面，以保持預訓練模型的穩定性。
+╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ✓  Edit 5114050013_hw5.py: import streamlit as st... => import streamlit as st...                                  │
+│                                                                                                                    │
+│ ... first 13 lines hidden ...                                                                                      │
+│  27 +     # 在啟動時就載入一次模型資訊                                                                             │
+│  28 +     st.session_state.model_info = load_model()                                                               │
+│  29                                                                                                                │
+│  30 +                                                                                                              │
+│  31   # --- 全局模型載入 ---                                                                                       │
+│  32   @st.cache_resource                                                                                           │
+│  31 - def get_model():                                                                                             │
+│  32 -     """僅在應用程式啟動或模型更新時載入一次模型。"""                                                         │
+│  33 -     model, le = load_model()                                                                                 │
+│  34 -     return model, le                                                                                         │
+│  33 + def get_model_from_info(model_info):                                                                         │
+│  34 +     """從已載入的 model_info 中提取模型和標籤編碼器。"""                                                     │
+│  35 +     if model_info:                                                                                           │
+│  36 +         return model_info.get("model"), model_info.get("label_encoder")                                      │
+│  37 +     return None, None                                                                                        │
+│  38                                                                                                                │
+│  36 - model, le = get_model()                                                                                      │
+│  39 + model, le = get_model_from_info(st.session_state.model_info)                                                 │
+│  40                                                                                                                │
+│  41   # --- 側邊欄 ---                                                                                             │
+│  39 - st.sidebar.title("⚙️ 設定與管理")                                                                            │
+│  42 + st.sidebar.title("⚙️ 系統資訊")                                                                              │
+│  43                                                                                                                │
+│  44   with st.sidebar.expander("🤖 模型資訊", expanded=True):                                                      │
+│  45       if model:                                                                                                │
+│  46           st.success("模型已成功載入。")                                                                       │
+│  47       else:                                                                                                    │
+│  45 -         st.warning("尚未偵測到模型。請先訓練新模型。")                                                       │
+│  48 +         st.error("模型檔案 `model.joblib` 遺失！請先在本機端執行 `python -m src.model` 來產生模型檔案。")    │
+│  49                                                                                                                │
+│  47 - with st.sidebar.expander("🏋️‍♀️ 模型訓練"):                                                                     │
+│  48 -     st.write("點擊下方按鈕以使用專案內建的資料集重新訓練模型。")                                             │
+│  49 -     if st.button("重新訓練模型", help="此過程可能需要一些時間。"):                                           │
+│  50 -         with st.spinner("模型訓練中，請稍候..."):                                                            │
+│  51 -             training_results = train_model()                                                                 │
+│  52 -                                                                                                              │
+│  53 -         if training_results:                                                                                 │
+│  54 -             st.cache_resource.clear()                                                                        │
+│  55 -             if 'analysis_results' in st.session_state:                                                       │
+│  56 -                 del st.session_state.analysis_results                                                        │
+│  57 -             st.session_state.model_info = training_results                                                   │
+│  58 -             st.success("模型訓練完成！")                                                                     │
+│  59 -             st.info("頁面將自動刷新以載入新模型...")                                                         │
+│  60 -             st.rerun()                                                                                       │
+│  61 -         else:                                                                                                │
+│  62 -             st.error("模型訓練失敗。請檢查資料或日誌。")                                                     │
+│  63 -                                                                                                              │
+│  64 - with st.sidebar.expander("ℹ️ 系統與開發資訊"):                                                               │
+│  50 + with st.sidebar.expander("ℹ️ 開發與環境"):                                                                   │
+│  51       st.write("**開發者:** Candice Wu")                                                                       │
+│  52       st.write(f"**Python 版本:** {sys.version.split(' ')[0]}")                                                │
+│  53       st.write(f"**Streamlit 版本:** {st.__version__}")                                                        │
+│  59   st.sidebar.markdown("---")                                                                                   │
+│  60   st.sidebar.write("© 2025 Candice Wu. All Rights Reserved.")                                                  │
+│  61   st.sidebar.write("最後更新: 2025-12-25")                                                                     │
+│ ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════ │
+│  76 - st.sidebar.caption("本工具用於區分 AI 生成與人類撰寫的文本。")                                               │
+│  62                                                                                                                │
+│  63                                                                                                                │
+│  64   # --- 主頁面 ---                                                                                             │
+│ ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════ │
+│  84       if not text_to_analyze.strip():                                                                          │
+│  85           st.warning("請輸入或上傳有效的文本內容。")                                                           │
+│  86       elif model is None:                                                                                      │
+│ ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════ │
+│ 102 -         st.error("模型尚未準備好。請先在側邊欄訓練模型。")                                                   │
+│  87 +         st.error("模型檔案遺失，無法進行分析。")                                                             │
+│  88       else:                                                                                                    │
+│  89           start_time = time.time()                                                                             │
+│  90           with st.spinner("正在分析文本..."):                                                                  │
+│ ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════ │
+│ 155                                                                                                                │
+│ 156       m_col1, m_col2 = st.columns(2)                                                                           │
+│ 157       with m_col1:                                                                                             │
+│ ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════ │
+│ 173 -         st.write("#### ⛳ 特徵重要性")                                                                       │
+│ 158 +         st.write("#### 特徵重要性")                                                                          │
+│ 159           st.dataframe(pd.Series(model_results["model"].feature_importances_, index=model_results[             │
+│       "feature_columns"]).sort_values(ascending=False).round(4))                                                   │
+│ 160       with m_col2:                                                                                             │
+│ ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════ │
+│ 176 -         st.write("#### 🧩 混淆矩陣")                                                                         │
+│ 161 +         st.write("#### 混淆矩陣")                                                                            │
+│ 162           st.plotly_chart(plot_confusion_matrix(y_test_labels_upper, y_pred_labels_upper,                      │
+│       labels=class_labels), use_container_width=True)                                                              │
+│ ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════ │
+│ 178 -                                                                                                              │
+│ 163 + else:                                                                                                        │
+│ 164 +     st.markdown("---")                                                                                       │
+│ 165 +     st.warning("找不到模型效能資訊。請確保 `model.joblib` 包含評估數據。")                                   │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+✦ 我已重構 5114050013_hw5.py，在維持預訓練模型策略的同時，恢復了模型效能儀表板。
+
+  現在，我需要將這些程式碼和 model.joblib 的變更提交到您的 Git 儲存庫。
+
+  計畫：
+   1. `git status`：檢查變更的檔案。
+   2. `git add .`：將所有變更加入暫存區。
+   3. `git commit -m "..."`：提交變更，訊息為「refactor: Pre-train model for deployment and restore performance
+      dashboard」。
+   4. `git push origin master`：將新的提交推送到遠端儲存庫。
+╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ✓  Shell git status [current working directory /Users/candicewu/Desktop/20241204 碩班/114 學年度碩專班申讀/10_作…  │
+│                                                                                                                    │
+│ On branch master                                                                                                   │
+│ Your branch is up to date with 'origin/master'.                                                                    │
+│                                                                                                                    │
+│ Changes not staged for commit:                                                                                     │
+│   (use "git add <file>..." to update what will be committed)                                                       │
+│   (use "git restore <file>..." to discard changes in working directory)                                            │
+│         modified:   .gitignore                                                                                     │
+│         modified:   5114050013_hw5.py                                                                              │
+│         modified:   prompt/prompt_20251225_3.txt                                                                   │
+│         modified:   src/model.py                                                                                   │
+│                                                                                                                    │
+│ Untracked files:                                                                                                   │
+│   (use "git add <file>..." to include in what will be committed)                                                   │
+│         model.joblib                                                                                               │
+│                                                                                                                    │
+│ no changes added to commit (use "git add" and/or "git commit -a")                                                  │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+✦ 狀態如預期：.gitignore、5114050013_hw5.py、prompt/prompt_20251225_3.txt 和 src/model.py 已修改，model.joblib
+  尚未追蹤。
+
+  現在，我將把這些變更都加入暫存區。

@@ -10,7 +10,7 @@ import plotly
 import altair as alt
 
 # 從 src 導入模組
-from src.model import train_model, load_model, predict_text, save_model, FEATURE_COLUMNS
+from src.model import train_model, load_model, predict_text, FEATURE_COLUMNS
 from src.visualization import plot_gauge_chart, plot_confusion_matrix, display_metrics
 
 # --- 應用程式設定 ---
@@ -24,44 +24,30 @@ st.set_page_config(
 if 'analysis_results' not in st.session_state:
     st.session_state.analysis_results = None
 if 'model_info' not in st.session_state:
-    st.session_state.model_info = None
+    # 在啟動時就載入一次模型資訊
+    st.session_state.model_info = load_model()
+
 
 # --- 全局模型載入 ---
 @st.cache_resource
-def get_model():
-    """僅在應用程式啟動或模型更新時載入一次模型。"""
-    model, le = load_model()
-    return model, le
+def get_model_from_info(model_info):
+    """從已載入的 model_info 中提取模型和標籤編碼器。"""
+    if model_info:
+        return model_info.get("model"), model_info.get("label_encoder")
+    return None, None
 
-model, le = get_model()
+model, le = get_model_from_info(st.session_state.model_info)
 
 # --- 側邊欄 ---
-st.sidebar.title("⚙️ 設定與管理")
+st.sidebar.title("⚙️ 系統資訊")
 
 with st.sidebar.expander("🤖 模型資訊", expanded=True):
     if model:
         st.success("模型已成功載入。")
     else:
-        st.warning("尚未偵測到模型。請先訓練新模型。")
+        st.error("模型檔案 `model.joblib` 遺失！請先在本機端執行 `python -m src.model` 來產生模型檔案。")
 
-with st.sidebar.expander("🏋️‍♀️ 模型訓練"):
-    st.write("點擊下方按鈕以使用專案內建的資料集重新訓練模型。")
-    if st.button("重新訓練模型", help="此過程可能需要一些時間。"):
-        with st.spinner("模型訓練中，請稍候..."):
-            training_results = train_model()
-        
-        if training_results:
-            st.cache_resource.clear()
-            if 'analysis_results' in st.session_state:
-                del st.session_state.analysis_results
-            st.session_state.model_info = training_results
-            st.success("模型訓練完成！")
-            st.info("頁面將自動刷新以載入新模型...")
-            st.rerun()
-        else:
-            st.error("模型訓練失敗。請檢查資料或日誌。")
-
-with st.sidebar.expander("ℹ️ 系統與開發資訊"):
+with st.sidebar.expander("ℹ️ 開發與環境"):
     st.write("**開發者:** Candice Wu")
     st.write(f"**Python 版本:** {sys.version.split(' ')[0]}")
     st.write(f"**Streamlit 版本:** {st.__version__}")
@@ -73,7 +59,6 @@ with st.sidebar.expander("ℹ️ 系統與開發資訊"):
 st.sidebar.markdown("---")
 st.sidebar.write("© 2025 Candice Wu. All Rights Reserved.")
 st.sidebar.write("最後更新: 2025-12-25")
-st.sidebar.caption("本工具用於區分 AI 生成與人類撰寫的文本。")
 
 
 # --- 主頁面 ---
@@ -99,7 +84,7 @@ if st.button("開始分析", type="primary"):
     if not text_to_analyze.strip():
         st.warning("請輸入或上傳有效的文本內容。")
     elif model is None:
-        st.error("模型尚未準備好。請先在側邊欄訓練模型。")
+        st.error("模型檔案遺失，無法進行分析。")
     else:
         start_time = time.time()
         with st.spinner("正在分析文本..."):
@@ -170,9 +155,11 @@ if st.session_state.model_info:
     
     m_col1, m_col2 = st.columns(2)
     with m_col1:
-        st.write("#### ⛳ 特徵重要性")
+        st.write("#### 特徵重要性")
         st.dataframe(pd.Series(model_results["model"].feature_importances_, index=model_results["feature_columns"]).sort_values(ascending=False).round(4))
     with m_col2:
-        st.write("#### 🧩 混淆矩陣")
+        st.write("#### 混淆矩陣")
         st.plotly_chart(plot_confusion_matrix(y_test_labels_upper, y_pred_labels_upper, labels=class_labels), use_container_width=True)
-
+else:
+    st.markdown("---")
+    st.warning("找不到模型效能資訊。請確保 `model.joblib` 包含評估數據。")

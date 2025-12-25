@@ -36,8 +36,5 @@ logs/
 .project
 .classpath
 
-# Model Artifacts
-model.joblib
-
 # Streamlit
 .streamlit/

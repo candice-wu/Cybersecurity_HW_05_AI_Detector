@@ -1,8 +1,8 @@
-# AI 文本偵測器 (AI Text Detector)
+# 📄 AI 文本偵測器 (AI Text Detector)
 
 本專案旨在開發一個能夠區分由人工智慧（AI）生成與人類撰寫文本的應用程式。應用程式基於機器學習模型，並透過 Streamlit 提供一個互動式的 Web 介面，讓使用者可以輸入文本進行即時分析，並以視覺化的方式呈現分析結果與模型效能。
 
-**[前往 Streamlit Demo 網站](TBD)**
+**[前往 Streamlit Demo 網站](https://hw05-ai-detector.streamlit.app)**
 
 ---
 
@@ -17,7 +17,7 @@
 
 ---
 
-## CRISP-DM 專案框架
+## 🥅 CRISP-DM 專案框架
 
 本專案遵循 CRISP-DM (跨產業數據探勘標準流程) 框架進行開發，其生命週期包含以下六個階段：
 
@@ -69,7 +69,7 @@
 
 ---
 
-## 專案架構
+## 🎡 專案架構
 
 ```
 .
@@ -125,20 +125,29 @@
 
 ### ☁️ 雲端部署 (Cloud Deployment)
 
-本應用程式設計為可輕鬆部署至 Streamlit Cloud，提供便捷的線上服務。
+在將此專案推送到您的遠端 GitHub 儲存庫後，您可以依照以下步驟將其免費部署為一個公開的 Web 應用程式：
 
-1.  **準備 GitHub 儲存庫**: 確保您的專案所有程式碼，包括 `5114050013_hw5.py` 和 `requirements.txt`，都已完整且正確地推送到您的 GitHub 儲存庫 (`https://github.com/candice-wu/Cybersecurity_HW_05_AI_Detector.git`)。
-2.  **建立 Streamlit Cloud 帳戶**: 前往 [Streamlit Cloud](https://streamlit.io/cloud) 網站並登入（可使用 GitHub 帳戶登入）。
-3.  **部署應用程式**:
-    *   在 Streamlit Cloud 儀表板中，點擊「New app」按鈕。
-    *   選擇您已連接的 GitHub 儲存庫 (`Cybersecurity_HW_05_AI_Detector`)。
-    *   設定 `Main file path` 為 `5114050013_hw5.py`。
-    *   確認 `Python version` 和 `App URL` 等其他可選設定。
-    *   點擊「Deploy!」按鈕。Streamlit Cloud 將自動處理依賴安裝、程式碼運行和公開應用程式。
+1.  **登入 Streamlit Community Cloud**
+    前往 [share.streamlit.io](https://share.streamlit.io/) 並使用您的 GitHub 帳號登入。
+
+2.  **建立新應用程式**
+    點擊頁面右上方的「New app」按鈕。
+
+3.  **連結您的儲存庫**
+    - **Repository**：選擇您存放此專案的 GitHub 儲存庫。
+    - **Branch**：選擇您要部署的分支（例如 `main` 或 `master`）。
+    - **Main file path**：確認應用程式的主檔案路徑為 `5114050013_hw5.py`。
+
+4.  **部署！**
+    點擊「Deploy!」。
+    Streamlit 將會開始建置您的應用程式，這可能需要幾分鐘的時間。
+
+5.  **取得應用程式網址**
+    部署成功後，您會得到一個公開的網址。請使用此網址更新本文件最上方的「前往 Streamlit Demo 網站」連結。
 
 ---
 
-## 未來可改善計畫
+## 🏜️ 未來可改善計畫
 
 -   **模型升級**: 引入 `transformers` 函式庫，使用更先進的預訓練語言模型（如 RoBERTa, BERT, DeBERTa）來進行偵測。這將從依賴統計特徵轉變為利用深度語意理解，有望大幅提升模型的準確度和泛化能力。
 -   **特徵擴充**: 在現有基礎上，增加更豐富的語言學特徵，例如：

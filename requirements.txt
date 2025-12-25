@@ -1,0 +1,13 @@
+# Core Application Dependencies
+streamlit
+scikit-learn
+pandas
+numpy
+plotly
+joblib
+altair
+
+# Development & Formatting
+black
+isort
+pytest
